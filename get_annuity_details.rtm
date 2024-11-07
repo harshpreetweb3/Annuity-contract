@@ -1,0 +1,15 @@
+# CALL_METHOD
+#     Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+#     "lock_fee"
+#     Decimal("5000")
+# ;
+CALL_METHOD
+    Address("component_tdx_2_1cpfk4lcmxyg8uh7caduyft5qfcdepcnunupjzgxhhc3hq0vrl2ky3d")
+    "get_annuity_details"
+;
+CALL_METHOD
+    Address("account_tdx_2_129ddks0xdzqdjtlz3gjsn862my8qd3w9mshwf66jm7cm0u2rlqlysw")
+    "try_deposit_batch_or_refund"
+    Expression("ENTIRE_WORKTOP")
+    Enum<0u8>()
+;

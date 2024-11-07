@@ -1,0 +1,27 @@
+CALL_METHOD
+    Address("component_sim1cptxxxxxxxxxfaucetxxxxxxxxx000527798379xxxxxxxxxhkrefh")
+    "lock_fee"
+    Decimal("5000")
+;
+CALL_FUNCTION
+    Address("package_tdx_2_1pklk5h22xd2exahfhckcgay7ew8ggj54wctwc6w5yrxyqm65yeu3r6")
+    "Annuity"
+    "instantiate_annuity"
+    "ANN"
+    "issuer"
+    "CONTRACT1234"
+    Decimal("0.05")
+    "XRD"
+    1719321600u64
+    1877088000u64
+    Decimal("1000")
+    "long"
+    Decimal("1000")
+    Decimal("10")
+;
+CALL_METHOD
+    Address("account_tdx_2_129ddks0xdzqdjtlz3gjsn862my8qd3w9mshwf66jm7cm0u2rlqlysw")
+    "try_deposit_batch_or_refund"
+    Expression("ENTIRE_WORKTOP")
+    Enum<0u8>()
+;
