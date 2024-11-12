@@ -39,7 +39,6 @@ mod annuity {
     }
 
     impl Annuity {
-
         pub fn instantiate_annuity(
             contract_type: String,
             contract_role: String,
@@ -53,7 +52,6 @@ mod annuity {
             price: Decimal,
             number_of_annuities_to_mint: Decimal,
         ) -> Global<Annuity> {
-
             let bucket_of_annuities: Bucket = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_NONE)
                 .metadata(metadata!(
@@ -87,7 +85,6 @@ mod annuity {
             .instantiate()
             .prepare_to_globalize(OwnerRole::None)
             .globalize()
-
         }
 
         pub fn purchase_annuity(&mut self, mut payment: Bucket) -> (Bucket, Bucket) {
@@ -96,8 +93,42 @@ mod annuity {
             (self.annuities.take(1), payment)
         }
 
-        pub fn claim_annual_payout(&mut self, annuity_token: Bucket) -> (Bucket, String) {
+        pub fn get_current_epoch(&self) -> u64 {
+            Runtime::current_epoch().number()
+        }
 
+        pub fn get_current_time(&self) -> i64 {
+            let current_time = Clock::current_time_rounded_to_seconds();
+            println!("Current time: {:?}", current_time);
+            println!(
+                "Seconds since unix epoch: {}",
+                current_time.seconds_since_unix_epoch
+            );
+
+            current_time.seconds_since_unix_epoch
+        }
+
+        pub fn get_current_timestamp(&self) -> i64 {
+            Clock::current_time_rounded_to_seconds().seconds_since_unix_epoch
+        }
+
+        pub fn format_instant(&self, seconds : i64) -> String {
+            // let seconds = instant.seconds_since_unix_epoch;
+            let minutes = seconds / 60;
+            let hours = minutes / 60;
+            let days = hours / 24;
+
+            let remaining_seconds = seconds % 60;
+            let remaining_minutes = minutes % 60;
+            let remaining_hours = hours % 24;
+
+            format!(
+                "{} days, {} hours, {} minutes, {} seconds",
+                days, remaining_hours, remaining_minutes, remaining_seconds 
+            )
+        }
+
+        pub fn claim_annual_payout(&mut self, annuity_token: Bucket) {
             assert!(
                 annuity_token.amount() == Decimal::one(),
                 "You can only claim for one annuity (ANN) at a time."
@@ -105,51 +136,8 @@ mod annuity {
 
             assert!(
                 annuity_token.resource_address() == self.annuities.resource_address(),
-                "Invalid annuity resource."
+                "Invalid annuity resource address. Please make sure the token is an Annuity (ANN)."
             );
-
-            let current_epoch = Runtime::current_epoch().number();
-            let seconds_in_year = 365 * 24 * 60 * 60;
-
-            let years_elapsed = (current_epoch - self.last_payout_epoch) / seconds_in_year;
-
-            if years_elapsed >= 1 {
-                let interest_payment = self.notional_principal * self.nominal_interest_rate / Decimal::from(5);
-                let total_payout = self.annual_payout + interest_payment;
-                self.collected_xrd.take(total_payout);
-                self.last_payout_epoch = current_epoch;
-                (annuity_token, format!("Annual payout of {} claimed successfully.", total_payout))
-            } else {
-                let remaining_time = seconds_in_year - (current_epoch - self.last_payout_epoch);
-                (annuity_token, format!("You can claim your annual payout after {} seconds.", remaining_time))
-            }
-        }
-
-        pub fn check_time_until_next_payout(&self) -> (i64, i64, i64, i64) {
-            let current_epoch = Runtime::current_epoch().number();
-            let seconds_in_year = 365 * 24 * 60 * 60;
-            let seconds_in_month = 30 * 24 * 60 * 60;
-            let seconds_in_week = 7 * 24 * 60 * 60;
-            let seconds_in_day = 24 * 60 * 60;
-
-            let time_left = self.maturity_date as i64 - current_epoch as i64;
-
-            if time_left > 0 {
-                let years = time_left / seconds_in_year;
-                let remaining_seconds_after_years = time_left % seconds_in_year;
-
-                let months = remaining_seconds_after_years / seconds_in_month;
-                let remaining_seconds_after_months = remaining_seconds_after_years % seconds_in_month;
-
-                let weeks = remaining_seconds_after_months / seconds_in_week;
-                let remaining_seconds_after_weeks = remaining_seconds_after_months % seconds_in_week;
-
-                let days = remaining_seconds_after_weeks / seconds_in_day;
-
-                (years, months, weeks, days)
-            } else {
-                (0, 0, 0, 0)
-            }
         }
 
         pub fn get_annuity_details(&self) -> AnnuityDetails {
