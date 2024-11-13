@@ -1,5 +1,5 @@
 use scrypto::prelude::*;
-
+// use chrono::{NaiveDateTime, TimeZone, Utc};
 #[derive(ScryptoSbor, Debug)]
 pub struct AnnuityDetails {
     pub contract_type: String,
@@ -35,23 +35,26 @@ mod annuity {
         collected_xrd: Vault,
         price: Decimal,
         annual_payout: Decimal,
-        last_payout_epoch: u64,
+        last_payout_epoch: u64,                    //?
     }
 
     impl Annuity {
+
+        // ANN issuer CONTRACT1234 0.05 XRD 1720100602 1872868602 1000 long 1000 10
         pub fn instantiate_annuity(
             contract_type: String,
             contract_role: String,
             contract_identifier: String,
-            nominal_interest_rate: Decimal,
+            nominal_interest_rate: Decimal,           
             currency: String,
             initial_exchange_date: u64,
             maturity_date: u64,
             notional_principal: Decimal,
             annuity_position: String,
-            price: Decimal,
+            price: Decimal,                           //discounted_price
             number_of_annuities_to_mint: Decimal,
         ) -> Global<Annuity> {
+            
             let bucket_of_annuities: Bucket = ResourceBuilder::new_fungible(OwnerRole::None)
                 .divisibility(DIVISIBILITY_NONE)
                 .metadata(metadata!(
@@ -85,50 +88,26 @@ mod annuity {
             .instantiate()
             .prepare_to_globalize(OwnerRole::None)
             .globalize()
+
         }
 
+        //Decimal -> fractional values (for financial transactions)
+        //Integer -> non-fractional values     
+        //u64     -> 18,446,744,073,709,551,615   
+
+        // stf
+        // resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3:1000 
         pub fn purchase_annuity(&mut self, mut payment: Bucket) -> (Bucket, Bucket) {
             let our_share = payment.take(self.price);
             self.collected_xrd.put(our_share);
-            (self.annuities.take(1), payment)
+            (self.annuities.take(1), payment) // took out resource from Vault into Bucket
+            // (ANN Token, returns extra amount if paid)
         }
 
-        pub fn get_current_epoch(&self) -> u64 {
-            Runtime::current_epoch().number()
-        }
+        // stf
+        // resource_sim1t4h3kupr5l95w6ufpuysl0afun0gfzzw7ltmk7y68ks5ekqh4cpx9w:1
+        pub fn claim_annual_payout(&mut self, annuity_token: Bucket) -> (Bucket, String) {
 
-        pub fn get_current_time(&self) -> i64 {
-            let current_time = Clock::current_time_rounded_to_seconds();
-            println!("Current time: {:?}", current_time);
-            println!(
-                "Seconds since unix epoch: {}",
-                current_time.seconds_since_unix_epoch
-            );
-
-            current_time.seconds_since_unix_epoch
-        }
-
-        pub fn get_current_timestamp(&self) -> i64 {
-            Clock::current_time_rounded_to_seconds().seconds_since_unix_epoch
-        }
-
-        pub fn format_instant(&self, seconds : i64) -> String {
-            // let seconds = instant.seconds_since_unix_epoch;
-            let minutes = seconds / 60;
-            let hours = minutes / 60;
-            let days = hours / 24;
-
-            let remaining_seconds = seconds % 60;
-            let remaining_minutes = minutes % 60;
-            let remaining_hours = hours % 24;
-
-            format!(
-                "{} days, {} hours, {} minutes, {} seconds",
-                days, remaining_hours, remaining_minutes, remaining_seconds 
-            )
-        }
-
-        pub fn claim_annual_payout(&mut self, annuity_token: Bucket) {
             assert!(
                 annuity_token.amount() == Decimal::one(),
                 "You can only claim for one annuity (ANN) at a time."
@@ -136,12 +115,45 @@ mod annuity {
 
             assert!(
                 annuity_token.resource_address() == self.annuities.resource_address(),
-                "Invalid annuity resource address. Please make sure the token is an Annuity (ANN)."
+                "Invalid annuity resource."
             );
+
+            let current_epoch = Clock::current_time_rounded_to_seconds().seconds_since_unix_epoch as u64;
+
+            //notice it gives out timestamp in integer which contains non-fractional values
+
+            let seconds_in_year = 365 * 24 * 60 * 60;
+            //31536000
+
+            let years_elapsed = (current_epoch - self.last_payout_epoch) / seconds_in_year;
+
+            if years_elapsed >= 1 {
+                let interest_payment = self.notional_principal * self.nominal_interest_rate / Decimal::from(5);
+                let total_payout = self.annual_payout + interest_payment;
+                self.collected_xrd.take(total_payout);
+                self.last_payout_epoch = current_epoch;
+                (annuity_token, format!("Annual payout of {} claimed successfully.", total_payout))
+            } else {
+                let remaining_time = seconds_in_year - (current_epoch - self.last_payout_epoch);
+                (annuity_token, format!("You can claim your annual payout after {} seconds.", remaining_time))
+            }
         }
 
+        // pof
+        pub fn check_time_until_next_payout(&self) -> i64 {
+
+            let current_epoch = Clock::current_time_rounded_to_seconds().seconds_since_unix_epoch as u64;
+
+            let seconds_in_year = 365 * 24 * 60 * 60;
+
+            let time_left = self.last_payout_epoch + seconds_in_year - current_epoch;
+                
+            time_left as i64
+        }
+
+        //pof
         pub fn get_annuity_details(&self) -> AnnuityDetails {
-            let current_epoch = Runtime::current_epoch().number();
+            let current_epoch = Clock::current_time_rounded_to_seconds().seconds_since_unix_epoch as u64;
             let seconds_in_day = 24 * 60 * 60;
             let days_left = (self.maturity_date as i64 - current_epoch as i64) / seconds_in_day;
 
@@ -171,7 +183,7 @@ mod annuity {
 // resim show component_sim1cp4qmcqlmtsqns8ckwjttvffjk4j4smkhlkt0qv94caftlj5u2xve2
 // resim show account_sim1c956qr3kxlgypxwst89j9yf24tjc7zxd4up38x37zr6q4jxdx9rhma
 
-// resim call-method component_sim1cp4qmcqlmtsqns8ckwjttvffjk4j4smkhlkt0qv94caftlj5u2xve2 get_annuity_details
+// resim call-method component_sim1cp4qmcqlmtsqns8ckwjttvffjk4j4smkhlkt0qv94caftlj5u2xve2 get_annuity_details 
 // resim call-method component_sim1cp4qmcqlmtsqns8ckwjttvffjk4j4smkhlkt0qv94caftlj5u2xve2 purchase_annuity resource_sim1tknxxxxxxxxxradxrdxxxxxxxxx009923554798xxxxxxxxxakj8n3:1000
 // resim call-method component_sim1cp4qmcqlmtsqns8ckwjttvffjk4j4smkhlkt0qv94caftlj5u2xve2 claim_annual_payout resource_sim1t4h3kupr5l95w6ufpuysl0afun0gfzzw7ltmk7y68ks5ekqh4cpx9w:1
 // resim call-method component_sim1cp4qmcqlmtsqns8ckwjttvffjk4j4smkhlkt0qv94caftlj5u2xve2 check_time_until_next_payout
