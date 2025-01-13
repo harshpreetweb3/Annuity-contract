@@ -1,0 +1,23 @@
+CALL_FUNCTION
+    Address("package_tdx_2_1phdwrd7mx22hcddg63x3gngjesu3amyzp3t37e7pmqtnwd6qf7vtwt")
+    "Annuity"
+    "instantiate_annuity"
+    "ANN"
+    "issuer"
+    "CONTRACT1234"
+    Decimal("0.05")
+    "XRD"
+    1731930728u64 
+    1889697128u64
+    Decimal("10")
+    "long"
+    Decimal("10")
+    Decimal("100")
+;
+
+CALL_METHOD
+    Address("account_tdx_2_1280l7wkzy35dsgvknl3xdh2q8uq7xluven2ycplrflqfqjkveuha90")
+    "try_deposit_batch_or_refund"
+    Expression("ENTIRE_WORKTOP")
+    Enum<0u8>()
+;

@@ -131,11 +131,15 @@ mod annuity {
                 let interest_payment = self.notional_principal * self.nominal_interest_rate / Decimal::from(5);
                 let total_payout = self.annual_payout + interest_payment;
                 self.collected_xrd.take(total_payout);
+                
                 self.last_payout_epoch = current_epoch;
                 (annuity_token, format!("Annual payout of {} claimed successfully.", total_payout))
             } else {
                 let remaining_time = seconds_in_year - (current_epoch - self.last_payout_epoch);
+                panic!("You can claim your annual payout after {} seconds", remaining_time);
+
                 (annuity_token, format!("You can claim your annual payout after {} seconds.", remaining_time))
+
             }
         }
 

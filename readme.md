@@ -1,3 +1,10 @@
+```package address```
+package_tdx_2_1phdwrd7mx22hcddg63x3gngjesu3amyzp3t37e7pmqtnwd6qf7vtwt
+
+```component address```
+component_tdx_2_1cr6uz6gnfw5czmzka6mxjy7ksfn620andkjumt9dftxnusphcvxys2
+
+
 ```Annuity Contract Overview```
 
 ```Idea```

@@ -1,0 +1,4 @@
+CALL_METHOD
+  Address("component_tdx_2_1cr6uz6gnfw5czmzka6mxjy7ksfn620andkjumt9dftxnusphcvxys2")
+  "check_time_until_next_payout"
+;
